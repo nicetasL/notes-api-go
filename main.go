@@ -4,6 +4,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"sync"
 )
 
 // Note represents a single note
@@ -17,6 +18,7 @@ type Note struct {
 var (
 	notes  []Note
 	nextID = 1
+	mutex  sync.Mutex // To ensure thread-safety
 )
 
 func main() {
@@ -38,12 +40,18 @@ func handleNotes(w http.ResponseWriter, r *http.Request) {
 
 // getNotes retrieves all notes
 func getNotes(w http.ResponseWriter) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(notes)
 }
 
 // createNote creates a new note
 func createNote(w http.ResponseWriter, r *http.Request) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	var note Note
 	if err := json.NewDecoder(r.Body).Decode(&note); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
